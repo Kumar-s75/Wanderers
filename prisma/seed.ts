@@ -18,7 +18,17 @@ async function main() {
   for (const tour of tours) {
     await prisma.tour.create({
       data: {
-        ...tour,
+        title: tour.title,
+        slug: tour.slug,
+        description: tour.description,
+        summary: tour.summary,
+        price: tour.price,
+        duration: tour.duration,
+        maxGroupSize: tour.maxGroupSize,
+        difficulty: tour.difficulty,
+        location: tour.location,
+        startLocation: tour.startLocation,
+        featured: tour.featured,
         images: {
           create: tour.images,
         },
@@ -26,14 +36,16 @@ async function main() {
           create: tour.itinerary,
         },
         included: {
-          create: tour.included,
+          create: tour.included.map(item => ({ item })),
         },
         notIncluded: {
-          create: tour.notIncluded,
+          create: tour.notIncluded.map(item => ({ item })),
         },
       },
     })
   }
+
+  console.log('Database seeded successfully!')
 }
 
 main()
@@ -44,3 +56,5 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
+
+  

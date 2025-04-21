@@ -2,7 +2,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { useDropzone } from 'react-dropzone'
+// import { useDropzone } from 'react-dropzone'
 import Image from 'next/image'
 import { X } from 'lucide-react'
 

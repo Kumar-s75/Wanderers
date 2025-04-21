@@ -1,0 +1,232 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model (extends the auth user)
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  profile  Profile?
+  tours    Tour[] // Added to match TourWithDetails
+  bookings Booking[]
+  reviews  Review[]
+  accounts Account[]
+  sessions Session[]
+}
+
+// User profile with additional information
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  phoneNumber String?
+  address     String?
+  city        String?
+  country     String?
+  bio         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Tour model
+model Tour {
+  id            String     @id @default(cuid())
+  title         String
+  slug          String     @unique
+  description   String     @db.Text // Changed to Text for longer content
+  summary       String     @db.Text // Changed to Text for longer content
+  price         Float
+  duration      Int // in days
+  maxGroupSize  Int
+  difficulty    Difficulty
+  location      String
+  startLocation String
+  featured      Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  userId        String // Added to match TourWithDetails
+
+  // Relations
+  user        User          @relation(fields: [userId], references: [id])
+  images      Image[]
+  bookings    Booking[]
+  reviews     Review[]
+  itinerary   Itinerary[]
+  included    Included[]
+  notIncluded NotIncluded[]
+}
+
+// Tour images
+model Image {
+  id        String   @id @default(cuid())
+  url       String
+  publicId  String? // Made optional to match ImageUploadResponse
+  tourId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tour Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+}
+
+// Tour itinerary
+model Itinerary {
+  id          String   @id @default(cuid())
+  day         Int
+  title       String
+  description String   @db.Text // Changed to Text for longer content
+  tourId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tour Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+}
+
+// What's included in the tour
+model Included {
+  id        String   @id @default(cuid())
+  item      String
+  tourId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tour Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+}
+
+// What's not included in the tour
+model NotIncluded {
+  id        String   @id @default(cuid())
+  item      String
+  tourId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tour Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+}
+
+// Booking model
+model Booking {
+  id              String        @id @default(cuid())
+  tourId          String
+  userId          String
+  status          BookingStatus @default(PENDING)
+  numGuests       Int
+  totalPrice      Float
+  startDate       DateTime
+  endDate         DateTime
+  specialRequests String?       @db.Text // Added to match BookingFormData
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  tour    Tour     @relation(fields: [tourId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+  payment Payment?
+}
+
+// Payment model
+model Payment {
+  id              String        @id @default(cuid())
+  bookingId       String        @unique
+  amount          Float
+  currency        String        @default("USD")
+  status          PaymentStatus @default(PENDING)
+  stripePaymentId String?
+  paymentMethod   String? // Added to match PaymentIntent
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+// Review model
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String   @db.Text // Changed to Text for longer content
+  tourId    String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tour Tour @relation(fields: [tourId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+}
+
+// Auth models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Enums
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  DIFFICULT
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}

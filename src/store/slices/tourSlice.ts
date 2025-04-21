@@ -35,7 +35,11 @@ export const fetchTours = createAsyncThunk(
       const data = await response.json()
       return data
     } catch (error) {
-      return rejectWithValue(error.message)
+        if (error instanceof Error) {
+            console.log(error.message);
+          } else {
+            console.log("Unknown error", error);
+          }
     }
   }
 )
@@ -48,7 +52,11 @@ export const fetchTourById = createAsyncThunk(
       const data = await response.json()
       return data
     } catch (error) {
-      return rejectWithValue(error.message)
+        if (error instanceof Error) {
+            console.log(error.message);
+          } else {
+            console.log("Unknown error", error);
+          }
     }
   }
 )

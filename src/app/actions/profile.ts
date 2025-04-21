@@ -1,8 +1,9 @@
 // src/app/actions/profile.ts
 'use server'
-
+import { getServerSession } from 'next-auth'
 import { uploadFile } from '@/lib/upload'
 import { prisma } from '@/lib/prisma'
+import { authOptions } from '../api/auth/[...nextauth]/route'
 
 export async function updateProfilePhoto(formData: FormData) {
   try {
@@ -22,6 +23,10 @@ export async function updateProfilePhoto(formData: FormData) {
 
     return { success: true, data: updatedProfile }
   } catch (error) {
-    return { success: false, error: error.message }
+    if (error instanceof Error) {
+        console.log(error.message);
+      } else {
+        console.log("Unknown error", error)
   }
+}
 }

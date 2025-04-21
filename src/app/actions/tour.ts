@@ -41,7 +41,9 @@ export async function createTour(
     const session = await getServerSession(authOptions)
     
     if (!session?.user) {
-      return { error: 'Unauthorized' }
+      return {  
+        // success: false,
+        error: "You must be logged in to create a tour" }
     }
 
     // Validate tour data

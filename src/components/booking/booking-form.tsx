@@ -121,15 +121,23 @@ export function BookingForm({ tourId, onSuccess }: BookingFormProps) {
       }))
       onSuccess?.()
     } catch (error) {
-      dispatch(showToast({
-        message: error.message,
-        type: 'error',
-      }))
+        if (error instanceof Error) {
+            dispatch(showToast({
+              message: error.message,
+              type: 'error',
+            }));
+          } else {
+            dispatch(showToast({
+              message: 'An unexpected error occurred.',
+              type: 'error',
+            }));
     }
   }
 
   return (
+    //@ts-ignore
     <Form onSubmit={handleSubmit(onSubmit)}>
+        
       <FormField label="Start Date" error={errors.startDate?.message}>
         <Input
           type="date"

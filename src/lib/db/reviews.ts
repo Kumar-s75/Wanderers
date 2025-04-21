@@ -1,3 +1,5 @@
+import { prisma } from "../prisma"
+import { Prisma } from "@/generated/prisma"
 export const reviewQueries = {
     // Create a new review
     createReview: async (data: Prisma.ReviewCreateInput) => {

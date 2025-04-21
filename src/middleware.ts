@@ -3,48 +3,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
-
-export default withAuth({
-  pages: {
-    signIn: "/login",
-  },
-})
-
-export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/profile/:path*",
-    "/bookings/:path*",
-  ],
-}
-
-export async function middleware(request: NextRequest) {
-    // Rate limiting
-    const ip = request.ip ?? '127.0.0.1'
-    const rateLimit = await checkRateLimit(ip)
-    
-    if (!rateLimit.success) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { status: 429 }
-      )
-    }
-
-    if (request.nextUrl.pathname.startsWith('/api/protected')) {
-        const token = await getToken({ req: request })
-        
-        if (!token) {
-          return NextResponse.json(
-            { error: 'Unauthorized' },
-            { status: 401 }
-          )
-        }
-      }
-    
-      return NextResponse.next()
-    }
-
-    const rateLimit = new Map<string, { count: number; resetTime: number }>()
+const rateLimit = new Map<string, { count: number; resetTime: number }>()
 
 async function checkRateLimit(ip: string) {
   const now = Date.now()
@@ -67,4 +26,46 @@ async function checkRateLimit(ip: string) {
 
   current.count++
   return { success: true }
+}
+
+// Create a custom middleware that combines rate limiting and auth
+export default withAuth(
+  async function middleware(request: NextRequest) {
+    // Rate limiting
+    const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? '127.0.0.1'
+    const rateLimitResult = await checkRateLimit(ip)
+    
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429 }
+      )
+    }
+
+    if (request.nextUrl.pathname.startsWith('/api/protected')) {
+      const token = await getToken({ req: request })
+      
+      if (!token) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        )
+      }
+    }
+    
+    return NextResponse.next()
+  },
+  {
+    pages: {
+      signIn: "/login",
+    },
+  }
+)
+
+export const config = {
+  matcher: [
+    "/dashboard/:path*",
+    "/profile/:path*",
+    "/bookings/:path*",
+  ],
 }
